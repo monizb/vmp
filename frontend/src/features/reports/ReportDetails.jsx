@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Box,
   Paper,
@@ -13,6 +13,10 @@ import {
   ListItem,
   ListItemText,
   Chip,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import { ArrowBack, Download, BugReport } from '@mui/icons-material';
 import { reportsApi, vulnsApi, appsApi } from '../../api/endpoints';
@@ -24,6 +28,7 @@ import { format } from 'date-fns';
 export function ReportDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const { data: report, isLoading, error } = useQuery({
     queryKey: ['reports', id],
@@ -34,6 +39,13 @@ export function ReportDetails() {
     queryKey: ['vulns', { reportId: id }],
     queryFn: () => vulnsApi.getAll({ reportId: id, pageSize: 1000 }),
     enabled: !!report,
+  });
+
+  const updateVulnMutation = useMutation({
+    mutationFn: ({ vulnId, data }) => vulnsApi.update(vulnId, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries(['vulns']);
+    },
   });
 
   const { data: apps } = useQuery({
@@ -223,6 +235,22 @@ export function ReportDetails() {
                     {vuln.cwe.map((cwe, i) => (
                       <Chip key={i} label={cwe} size="small" variant="outlined" />
                     ))}
+                  </Box>
+                  <Box sx={{ mt: 1, display: 'flex', gap: 2, alignItems: 'center', width: '100%' }}>
+                    <FormControl size="small" sx={{ minWidth: 240 }} onClick={(e) => e.stopPropagation()}>
+                      <InputLabel>Internal Status</InputLabel>
+                      <Select
+                        value={vuln.internalStatus || ''}
+                        label="Internal Status"
+                        onChange={(e) => updateVulnMutation.mutate({ vulnId: vuln.id, data: { internalStatus: e.target.value } })}
+                      >
+                        <MenuItem value="">None</MenuItem>
+                        <MenuItem value="Stuck">Stuck</MenuItem>
+                        <MenuItem value="Fix in progress">Fix in progress</MenuItem>
+                        <MenuItem value="False positive">False positive</MenuItem>
+                        <MenuItem value="Exemption requested">Exemption requested</MenuItem>
+                      </Select>
+                    </FormControl>
                   </Box>
                 </ListItem>
                 {index < reportVulns.length - 1 && <Divider />}

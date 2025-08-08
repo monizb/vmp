@@ -14,6 +14,7 @@ export default async function vulnRoutes(fastify, options) {
         applicationId: request.query.applicationId,
         reportId: request.query.reportId,
         status: request.query.status,
+        internalStatus: request.query.internalStatus,
         severity: request.query.severity,
         assignedTo: request.query.assignedTo,
         search: request.query.search

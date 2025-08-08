@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Table,
@@ -16,8 +16,8 @@ import {
   Chip,
   Link,
 } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
-import { vulnsApi, appsApi, reportsApi } from '../../api/endpoints';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { vulnsApi, appsApi, reportsApi, usersApi, viewsApi } from '../../api/endpoints';
 import { SeverityChip } from '../../components/ui/SeverityChip';
 import { StatusChip } from '../../components/ui/StatusChip';
 import { VulnsFilters } from './VulnsFilters';
@@ -25,9 +25,13 @@ import { format } from 'date-fns';
 
 export function VulnsTable() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
   const [filters, setFilters] = useState({});
+  const [openAddDialog, setOpenAddDialog] = useState(false);
+  const [newVuln, setNewVuln] = useState({ title: '', description: '', severity: 'Medium', applicationId: '', reportId: '', assignedToUserId: '', dueDate: '' });
+  const [viewName, setViewName] = useState('');
 
   const { data: vulnsData, isLoading, error } = useQuery({
     queryKey: ['vulns', { page: page + 1, pageSize, ...filters }],
@@ -44,6 +48,16 @@ export function VulnsTable() {
     queryFn: () => reportsApi.getAll({ pageSize: 1000 }),
   });
 
+  const { data: users } = useQuery({
+    queryKey: ['users'],
+    queryFn: () => usersApi.getAll(),
+  });
+
+  const { data: savedViews, refetch: refetchViews } = useQuery({
+    queryKey: ['views', 'vulns'],
+    queryFn: () => viewsApi.getAll({ entityType: 'vulns' }),
+  });
+
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
   };
@@ -58,6 +72,18 @@ export function VulnsTable() {
     setPage(0);
   };
 
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const initial = {};
+    ['applicationId', 'status', 'severity', 'assignedTo', 'search', 'internalStatus'].forEach((k) => {
+      const v = params.get(k);
+      if (v) initial[k] = v;
+    });
+    if (Object.keys(initial).length > 0) {
+      setFilters(initial);
+    }
+  }, [location.search]);
+
   const handleRowClick = (vulnId) => {
     navigate(`/vulns/${vulnId}`);
   };
@@ -71,6 +97,19 @@ export function VulnsTable() {
     if (!reportId) return null;
     const report = reports?.items?.find(r => r.id === reportId);
     return report;
+  };
+
+  const handleCreateVuln = async () => {
+    await vulnsApi.create({ ...newVuln, dueDate: newVuln.dueDate || undefined });
+    setOpenAddDialog(false);
+    setNewVuln({ title: '', description: '', severity: 'Medium', applicationId: '', reportId: '', assignedToUserId: '', dueDate: '' });
+  };
+
+  const handleSaveView = async () => {
+    if (!viewName) return;
+    await viewsApi.create({ name: viewName, entityType: 'vulns', filters });
+    setViewName('');
+    await refetchViews();
   };
 
   if (isLoading) {
@@ -121,7 +160,23 @@ export function VulnsTable() {
 
   return (
     <Box>
-      <VulnsFilters onFiltersChange={handleFiltersChange} />
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+        <VulnsFilters onFiltersChange={handleFiltersChange} />
+        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+          <select onChange={(e) => {
+            const view = savedViews?.find(v => v.id === e.target.value);
+            if (view) handleFiltersChange(view.filters || {});
+          }} value="">
+            <option value="">Saved Views</option>
+            {savedViews?.map(v => (
+              <option key={v.id} value={v.id}>{v.name}</option>
+            ))}
+          </select>
+          <input placeholder="View name" value={viewName} onChange={(e) => setViewName(e.target.value)} />
+          <button onClick={handleSaveView} disabled={!viewName}>Save View</button>
+          <button onClick={() => setOpenAddDialog(true)}>Add Vulnerability</button>
+        </Box>
+      </Box>
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
@@ -209,7 +264,7 @@ export function VulnsTable() {
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2">
-                      {vuln.assignedToUserId || 'Unassigned'}
+                      {users?.find(u => u.id === vuln.assignedToUserId)?.name || users?.find(u => u.id === vuln.assignedToUserId)?.email || 'Unassigned'}
                     </Typography>
                   </TableCell>
                   <TableCell>
@@ -238,6 +293,36 @@ export function VulnsTable() {
           onRowsPerPageChange={handleChangePageSize}
         />
       </TableContainer>
+
+      {openAddDialog && (
+        <div style={{ padding: 16, background: '#fff', border: '1px solid #ccc', marginTop: 12 }}>
+          <Typography variant="h6">Add Vulnerability</Typography>
+          <div style={{ display: 'grid', gap: 8, gridTemplateColumns: '1fr 1fr' }}>
+            <input placeholder="Title" value={newVuln.title} onChange={(e) => setNewVuln({ ...newVuln, title: e.target.value })} />
+            <select value={newVuln.severity} onChange={(e) => setNewVuln({ ...newVuln, severity: e.target.value })}>
+              {['Low','Medium','High','Critical'].map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <select value={newVuln.applicationId} onChange={(e) => setNewVuln({ ...newVuln, applicationId: e.target.value })}>
+              <option value="">Select Application</option>
+              {apps?.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+            </select>
+            <select value={newVuln.reportId} onChange={(e) => setNewVuln({ ...newVuln, reportId: e.target.value })}>
+              <option value="">No Report (Manual)</option>
+              {reports?.items?.map(r => <option key={r.id} value={r.id}>{r.fileName}</option>)}
+            </select>
+            <select value={newVuln.assignedToUserId} onChange={(e) => setNewVuln({ ...newVuln, assignedToUserId: e.target.value })}>
+              <option value="">Unassigned</option>
+              {users?.map(u => <option key={u.id} value={u.id}>{u.name || u.email}</option>)}
+            </select>
+            <input type="date" value={newVuln.dueDate} onChange={(e) => setNewVuln({ ...newVuln, dueDate: e.target.value })} />
+            <textarea placeholder="Description" style={{ gridColumn: '1 / span 2' }} value={newVuln.description} onChange={(e) => setNewVuln({ ...newVuln, description: e.target.value })} />
+          </div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+            <button onClick={handleCreateVuln}>Create</button>
+            <button onClick={() => setOpenAddDialog(false)}>Cancel</button>
+          </div>
+        </div>
+      )}
     </Box>
   );
 } 

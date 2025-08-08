@@ -22,6 +22,7 @@ export function VulnsFilters({ onFiltersChange }) {
     status: '',
     applicationId: '',
     assignedTo: '',
+    internalStatus: '',
   });
 
   const { data: apps } = useQuery({
@@ -47,6 +48,7 @@ export function VulnsFilters({ onFiltersChange }) {
       status: '',
       applicationId: '',
       assignedTo: '',
+      internalStatus: '',
     };
     setFilters(clearedFilters);
     onFiltersChange(clearedFilters);
@@ -108,6 +110,24 @@ export function VulnsFilters({ onFiltersChange }) {
               {Object.values(VulnStatus).map((status) => (
                 <MenuItem key={status} value={status}>
                   {status}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Grid>
+
+        <Grid item xs={12} md={2}>
+          <FormControl fullWidth size="small">
+            <InputLabel>Internal Status</InputLabel>
+            <Select
+              value={filters.internalStatus}
+              label="Internal Status"
+              onChange={(e) => handleFilterChange('internalStatus', e.target.value)}
+            >
+              <MenuItem value="">All</MenuItem>
+              {['Stuck', 'Fix in progress', 'False positive', 'Exemption requested'].map((s) => (
+                <MenuItem key={s} value={s}>
+                  {s}
                 </MenuItem>
               ))}
             </Select>

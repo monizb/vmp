@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Table,
@@ -27,15 +27,17 @@ import {
   Tooltip,
 } from '@mui/material';
 import { Add, Visibility, Download, Upload } from '@mui/icons-material';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { reportsApi, appsApi } from '../../api/endpoints';
 import { format } from 'date-fns';
 
 export function ReportsTable() {
   const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(10);
+  const [filters, setFilters] = useState({});
   const [openUploadDialog, setOpenUploadDialog] = useState(false);
   const [uploadData, setUploadData] = useState({
     driveFileId: '',
@@ -44,8 +46,8 @@ export function ReportsTable() {
   });
 
   const { data: reportsData, isLoading, error } = useQuery({
-    queryKey: ['reports', { page: page + 1, pageSize }],
-    queryFn: () => reportsApi.getAll({ page: page + 1, pageSize }),
+    queryKey: ['reports', { page: page + 1, pageSize, ...filters }],
+    queryFn: () => reportsApi.getAll({ page: page + 1, pageSize, ...filters }),
   });
 
   const { data: apps } = useQuery({
@@ -70,6 +72,16 @@ export function ReportsTable() {
     setPageSize(parseInt(event.target.value, 10));
     setPage(0);
   };
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const initial = {};
+    const appId = params.get('applicationId');
+    if (appId) initial.applicationId = appId;
+    if (Object.keys(initial).length > 0) {
+      setFilters(initial);
+    }
+  }, [location.search]);
 
   const handleRowClick = (reportId) => {
     navigate(`/reports/${reportId}`);
@@ -296,14 +308,17 @@ export function ReportsTable() {
                 ))}
               </Select>
             </FormControl>
-            <TextField
-              label="Vendor Name"
-              value={uploadData.vendorName}
-              onChange={(e) => setUploadData({ ...uploadData, vendorName: e.target.value })}
-              placeholder="Enter the security vendor name"
-              fullWidth
-              required
-            />
+            <FormControl fullWidth required>
+              <InputLabel>Vendor</InputLabel>
+              <Select
+                value={uploadData.vendorName}
+                onChange={(e) => setUploadData({ ...uploadData, vendorName: e.target.value })}
+                label="Vendor"
+              >
+                <MenuItem value="appknox">Appknox</MenuItem>
+                <MenuItem value="aujas">Aujas</MenuItem>
+              </Select>
+            </FormControl>
           </Box>
         </DialogContent>
         <DialogActions>

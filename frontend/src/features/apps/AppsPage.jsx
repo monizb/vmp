@@ -380,14 +380,17 @@ export function AppsPage() {
               fullWidth
               required
             />
-            <TextField
-              label="Vendor Name"
-              value={reportData.vendorName}
-              onChange={(e) => setReportData({ ...reportData, vendorName: e.target.value })}
-              placeholder="Enter the security vendor name"
-              fullWidth
-              required
-            />
+            <FormControl fullWidth required>
+              <InputLabel>Vendor</InputLabel>
+              <Select
+                value={reportData.vendorName}
+                onChange={(e) => setReportData({ ...reportData, vendorName: e.target.value })}
+                label="Vendor"
+              >
+                <MenuItem value="appknox">Appknox</MenuItem>
+                <MenuItem value="aujas">Aujas</MenuItem>
+              </Select>
+            </FormControl>
           </Box>
         </DialogContent>
         <DialogActions>

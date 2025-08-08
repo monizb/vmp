@@ -91,6 +91,7 @@ export class Vulnerability {
     this.cwe = data.cwe || [];
     this.cve = data.cve || [];
     this.status = data.status || VulnStatus.New;
+    this.internalStatus = data.internalStatus || '';
     this.discoveredDate = data.discoveredDate || new Date().toISOString();
     this.dueDate = data.dueDate || '';
     this.resolvedDate = data.resolvedDate || '';

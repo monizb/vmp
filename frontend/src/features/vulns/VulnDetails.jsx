@@ -14,10 +14,6 @@ import {
   Select,
   MenuItem,
   TextField,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
 } from '@mui/material';
 import { ArrowBack, Edit, Save, Cancel } from '@mui/icons-material';
 import { vulnsApi, appsApi, usersApi } from '../../api/endpoints';
@@ -62,6 +58,7 @@ export function VulnDetails() {
   const handleEdit = () => {
     setEditData({
       status: vuln.status,
+      internalStatus: vuln.internalStatus || '',
       assignedToUserId: vuln.assignedToUserId || '',
       dueDate: vuln.dueDate ? vuln.dueDate.split('T')[0] : '',
     });
@@ -220,6 +217,21 @@ export function VulnDetails() {
                   </FormControl>
 
                   <FormControl fullWidth size="small">
+                    <InputLabel>Internal Status</InputLabel>
+                    <Select
+                      value={editData.internalStatus}
+                      label="Internal Status"
+                      onChange={(e) => setEditData({ ...editData, internalStatus: e.target.value })}
+                    >
+                      <MenuItem value="">None</MenuItem>
+                      <MenuItem value="Stuck">Stuck</MenuItem>
+                      <MenuItem value="Fix in progress">Fix in progress</MenuItem>
+                      <MenuItem value="False positive">False positive</MenuItem>
+                      <MenuItem value="Exemption requested">Exemption requested</MenuItem>
+                    </Select>
+                  </FormControl>
+
+                  <FormControl fullWidth size="small">
                     <InputLabel>Assigned To</InputLabel>
                     <Select
                       value={editData.assignedToUserId}
@@ -270,6 +282,15 @@ export function VulnDetails() {
                       Status
                     </Typography>
                     <StatusChip status={vuln.status} />
+                  </Box>
+
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Internal Status
+                    </Typography>
+                    <Typography variant="body1">
+                      {vuln.internalStatus || 'None'}
+                    </Typography>
                   </Box>
 
                   <Box>

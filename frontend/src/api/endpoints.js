@@ -78,3 +78,10 @@ export const vulnsApi = {
   getUpcomingRetests: () => apiClient.get('/vulns/upcoming-retests'),
   getStats: () => apiClient.get('/vulns/stats'),
 }; 
+
+export const viewsApi = {
+  getAll: (filters = {}) => apiClient.get('/views', filters),
+  create: (data) => apiClient.post('/views', data),
+  update: (id, data) => apiClient.patch(`/views/${id}`),
+  delete: (id) => apiClient.delete(`/views/${id}`),
+};

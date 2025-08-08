@@ -11,6 +11,7 @@ import teamRoutes from './routes/teams.js';
 import appRoutes from './routes/apps.js';
 import reportRoutes from './routes/reports.js';
 import vulnRoutes from './routes/vulns.js';
+import viewRoutes from './routes/views.js';
 import authRoutes from './routes/auth.js';
 
 // Import database connection
@@ -74,6 +75,7 @@ await fastify.register(teamRoutes, { prefix: '/api' });
 await fastify.register(appRoutes, { prefix: '/api' });
 await fastify.register(reportRoutes, { prefix: '/api' });
 await fastify.register(vulnRoutes, { prefix: '/api' });
+await fastify.register(viewRoutes, { prefix: '/api' });
 
 // Health check endpoint
 fastify.get('/health', async (request, reply) => {
