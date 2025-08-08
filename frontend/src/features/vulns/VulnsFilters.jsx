@@ -81,109 +81,97 @@ export function VulnsFilters({ onFiltersChange, value }) {
         </Button>
       </Box>
 
-      <Grid container spacing={2}>
-        <Grid item xs={12} md={3}>
-          <TextField
-            fullWidth
-            label="Search"
-            placeholder="Search vulnerabilities..."
-            value={filters.search}
-            onChange={(e) => handleFilterChange('search', e.target.value)}
-            size="small"
-          />
-        </Grid>
+      <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+        <TextField
+          label="Search"
+          placeholder="Search vulnerabilities..."
+          value={filters.search}
+          onChange={(e) => handleFilterChange('search', e.target.value)}
+          size="small"
+          sx={{ minWidth: 200 }}
+        />
 
-        <Grid item xs={12} md={2}>
-          <FormControl fullWidth size="small">
-            <InputLabel>Severity</InputLabel>
-            <Select
-              value={filters.severity}
-              label="Severity"
-              onChange={(e) => handleFilterChange('severity', e.target.value)}
-            >
-              <MenuItem value="">All</MenuItem>
-              {Object.values(Severity).map((severity) => (
-                <MenuItem key={severity} value={severity}>
-                  {severity}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
+        <FormControl size="small" sx={{ minWidth: 120 }}>
+          <InputLabel>Severity</InputLabel>
+          <Select
+            value={filters.severity}
+            label="Severity"
+            onChange={(e) => handleFilterChange('severity', e.target.value)}
+          >
+            <MenuItem value="">All</MenuItem>
+            {Object.values(Severity).map((severity) => (
+              <MenuItem key={severity} value={severity}>
+                {severity}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
 
-        <Grid item xs={12} md={2}>
-          <FormControl fullWidth size="small">
-            <InputLabel>Status</InputLabel>
-            <Select
-              value={filters.status}
-              label="Status"
-              onChange={(e) => handleFilterChange('status', e.target.value)}
-            >
-              <MenuItem value="">All</MenuItem>
-              {Object.values(VulnStatus).map((status) => (
-                <MenuItem key={status} value={status}>
-                  {status}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
+        <FormControl size="small" sx={{ minWidth: 120 }}>
+          <InputLabel>Status</InputLabel>
+          <Select
+            value={filters.status}
+            label="Status"
+            onChange={(e) => handleFilterChange('status', e.target.value)}
+          >
+            <MenuItem value="">All</MenuItem>
+            {Object.values(VulnStatus).map((status) => (
+              <MenuItem key={status} value={status}>
+                {status}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
 
-        <Grid item xs={12} md={2}>
-          <FormControl fullWidth size="small">
-            <InputLabel>Internal Status</InputLabel>
-            <Select
-              value={filters.internalStatus}
-              label="Internal Status"
-              onChange={(e) => handleFilterChange('internalStatus', e.target.value)}
-            >
-              <MenuItem value="">All</MenuItem>
-              {['Stuck', 'Fix in progress', 'False positive', 'Exemption requested'].map((s) => (
-                <MenuItem key={s} value={s}>
-                  {s}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
+        <FormControl size="small" sx={{ minWidth: 140 }}>
+          <InputLabel>Internal Status</InputLabel>
+          <Select
+            value={filters.internalStatus}
+            label="Internal Status"
+            onChange={(e) => handleFilterChange('internalStatus', e.target.value)}
+          >
+            <MenuItem value="">All</MenuItem>
+            {['Stuck', 'Fix in progress', 'False positive', 'Exemption requested'].map((s) => (
+              <MenuItem key={s} value={s}>
+                {s}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
 
-        <Grid item xs={12} md={2}>
-          <FormControl fullWidth size="small">
-            <InputLabel>Application</InputLabel>
-            <Select
-              value={filters.applicationId}
-              label="Application"
-              onChange={(e) => handleFilterChange('applicationId', e.target.value)}
-            >
-              <MenuItem value="">All</MenuItem>
-              {apps?.map((app) => (
-                <MenuItem key={app.id} value={app.id}>
-                  {app.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
+        <FormControl size="small" sx={{ minWidth: 140 }}>
+          <InputLabel>Application</InputLabel>
+          <Select
+            value={filters.applicationId}
+            label="Application"
+            onChange={(e) => handleFilterChange('applicationId', e.target.value)}
+          >
+            <MenuItem value="">All</MenuItem>
+            {apps?.map((app) => (
+              <MenuItem key={app.id} value={app.id}>
+                {app.name}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
 
-        <Grid item xs={12} md={2}>
-          <FormControl fullWidth size="small">
-            <InputLabel>Assigned To</InputLabel>
-            <Select
-              value={filters.assignedTo}
-              label="Assigned To"
-              onChange={(e) => handleFilterChange('assignedTo', e.target.value)}
-            >
-              <MenuItem value="">All</MenuItem>
-              <MenuItem value="unassigned">Unassigned</MenuItem>
-              {users?.map((user) => (
-                <MenuItem key={user.id} value={user.id}>
-                  {user.name || user.email}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-      </Grid>
+        <FormControl size="small" sx={{ minWidth: 140 }}>
+          <InputLabel>Assigned To</InputLabel>
+          <Select
+            value={filters.assignedTo}
+            label="Assigned To"
+            onChange={(e) => handleFilterChange('assignedTo', e.target.value)}
+          >
+            <MenuItem value="">All</MenuItem>
+            <MenuItem value="unassigned">Unassigned</MenuItem>
+            {users?.map((user) => (
+              <MenuItem key={user.id} value={user.id}>
+                {user.name || user.email}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+      </Box>
     </Paper>
   );
 } 

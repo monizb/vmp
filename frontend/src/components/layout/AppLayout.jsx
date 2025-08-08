@@ -29,6 +29,7 @@ import {
   Person,
   Logout,
   Security,
+  ViewList,
 } from '@mui/icons-material';
 import { useAuth } from '../../features/auth/AuthProvider';
 import { Role } from '../../types/models';
@@ -39,6 +40,7 @@ const menuItems = [
   { text: 'Dashboard', icon: <Dashboard />, path: '/' },
   { text: 'Vulnerabilities', icon: <BugReport />, path: '/vulns' },
   { text: 'Reports', icon: <Description />, path: '/reports' },
+  { text: 'Views', icon: <ViewList />, path: '/views' },
   { text: 'Applications', icon: <Apps />, path: '/apps', roles: [Role.Admin, Role.Security] },
   { text: 'Teams', icon: <Group />, path: '/teams', roles: [Role.Admin, Role.Security] },
   { text: 'Users', icon: <Person />, path: '/users', roles: [Role.Admin] },

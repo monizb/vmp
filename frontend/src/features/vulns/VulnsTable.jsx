@@ -27,7 +27,7 @@ import {
   MenuItem,
 } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { vulnsApi, appsApi, reportsApi, usersApi, viewsApi } from '../../api/endpoints';
+import { vulnsApi, appsApi, reportsApi, usersApi } from '../../api/endpoints';
 import { SeverityChip } from '../../components/ui/SeverityChip';
 import { StatusChip } from '../../components/ui/StatusChip';
 import { VulnsFilters } from './VulnsFilters';
@@ -42,8 +42,6 @@ export function VulnsTable() {
   const [filters, setFilters] = useState({});
   const [openAddDialog, setOpenAddDialog] = useState(false);
   const [newVuln, setNewVuln] = useState({ title: '', description: '', severity: 'Medium', applicationId: '', reportId: '', assignedToUserId: '', dueDate: '' });
-  const [viewName, setViewName] = useState('');
-  const [selectedViewId, setSelectedViewId] = useState('');
 
   const { data: vulnsData, isLoading, error } = useQuery({
     queryKey: ['vulns', { page: page + 1, pageSize, ...filters }],
@@ -63,11 +61,6 @@ export function VulnsTable() {
   const { data: users } = useQuery({
     queryKey: ['users'],
     queryFn: () => usersApi.getAll(),
-  });
-
-  const { data: savedViews, refetch: refetchViews } = useQuery({
-    queryKey: ['views', 'vulns'],
-    queryFn: () => viewsApi.getAll({ entityType: 'vulns' }),
   });
 
   const handleChangePage = (event, newPage) => {
@@ -119,14 +112,9 @@ export function VulnsTable() {
     queryClient.invalidateQueries(['vulns']);
   };
 
-  const handleSaveView = async () => {
-    if (!viewName) return;
-    await viewsApi.create({ name: viewName, entityType: 'vulns', filters });
-    setViewName('');
-    await refetchViews();
-  };
 
-  // selectedView can be derived when needed via savedViews and selectedViewId
+
+
 
   if (isLoading) {
     return (
@@ -176,26 +164,15 @@ export function VulnsTable() {
 
   return (
     <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-        <VulnsFilters onFiltersChange={handleFiltersChange} value={filters} />
-        <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-          <FormControl size="small" sx={{ minWidth: 200 }}>
-            <InputLabel>Saved Views</InputLabel>
-            <Select value={selectedViewId} label="Saved Views" onChange={(e) => {
-              setSelectedViewId(e.target.value);
-              const view = savedViews?.find(v => v.id === e.target.value);
-              if (view) handleFiltersChange(view.filters || {});
-            }}>
-              <MenuItem value=""><em>None</em></MenuItem>
-              {savedViews?.map(v => (
-                <MenuItem key={v.id} value={v.id}>{v.name}</MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <TextField size="small" placeholder="View name" value={viewName} onChange={(e) => setViewName(e.target.value)} />
-          <Button variant="outlined" onClick={handleSaveView} disabled={!viewName}>Save View</Button>
-          <Button variant="contained" onClick={() => setOpenAddDialog(true)}>Add Vulnerability</Button>
+      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mb: 2 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Typography variant="h5">Vulnerabilities</Typography>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button variant="outlined" onClick={() => navigate('/views')}>Views</Button>
+            <Button variant="contained" onClick={() => setOpenAddDialog(true)}>Add Vulnerability</Button>
+          </Box>
         </Box>
+        <VulnsFilters onFiltersChange={handleFiltersChange} value={filters} />
       </Box>
       <TableContainer component={Paper}>
         <Table>

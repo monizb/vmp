@@ -14,6 +14,7 @@ import { VulnsTable } from '../features/vulns/VulnsTable';
 import { VulnDetails } from '../features/vulns/VulnDetails';
 import { ReportsTable } from '../features/reports/ReportsTable';
 import { ReportDetails } from '../features/reports/ReportDetails';
+import { ViewsPage } from '../features/views/ViewsPage';
 import { AppsPage } from '../features/apps/AppsPage';
 import { TeamsPage } from '../features/teams/TeamsPage';
 import { UsersPage } from '../features/users/UsersPage';
@@ -65,6 +66,7 @@ function App() {
                   <Route path="vulns/:id" element={<VulnDetails />} />
                   <Route path="reports" element={<ReportsTable />} />
                   <Route path="reports/:id" element={<ReportDetails />} />
+                  <Route path="views" element={<ViewsPage />} />
                   <Route
                     path="apps"
                     element={

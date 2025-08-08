@@ -54,7 +54,7 @@ await fastify.register(cors, {
 
 // Register rate limiting
 await fastify.register(rateLimit, {
-  max: parseInt(process.env.RATE_LIMIT_MAX) || 100,
+  max: parseInt(process.env.RATE_LIMIT_MAX) || 1000,
   timeWindow: process.env.RATE_LIMIT_WINDOW_MS || '15 minutes',
   errorResponseBuilder: function (request, context) {
     return {
