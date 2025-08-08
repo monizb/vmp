@@ -82,6 +82,6 @@ export const vulnsApi = {
 export const viewsApi = {
   getAll: (filters = {}) => apiClient.get('/views', filters),
   create: (data) => apiClient.post('/views', data),
-  update: (id, data) => apiClient.patch(`/views/${id}`),
+  update: (id, data) => apiClient.patch(`/views/${id}`, data),
   delete: (id) => apiClient.delete(`/views/${id}`),
 };

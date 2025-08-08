@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Box,
@@ -15,7 +15,7 @@ import { Clear, FilterList } from '@mui/icons-material';
 import { appsApi, usersApi } from '../../api/endpoints';
 import { Severity, VulnStatus } from '../../types/models';
 
-export function VulnsFilters({ onFiltersChange }) {
+export function VulnsFilters({ onFiltersChange, value }) {
   const [filters, setFilters] = useState({
     search: '',
     severity: '',
@@ -24,6 +24,19 @@ export function VulnsFilters({ onFiltersChange }) {
     assignedTo: '',
     internalStatus: '',
   });
+
+  useEffect(() => {
+    if (value) {
+      setFilters({
+        search: value.search || '',
+        severity: value.severity || '',
+        status: value.status || '',
+        applicationId: value.applicationId || '',
+        assignedTo: value.assignedTo || '',
+        internalStatus: value.internalStatus || '',
+      });
+    }
+  }, [value]);
 
   const { data: apps } = useQuery({
     queryKey: ['apps'],
