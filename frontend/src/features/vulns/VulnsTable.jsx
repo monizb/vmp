@@ -31,6 +31,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { vulnsApi, appsApi, reportsApi, usersApi, settingsApi } from '../../api/endpoints';
 import { SeverityChip } from '../../components/ui/SeverityChip';
 import { StatusChip } from '../../components/ui/StatusChip';
+import { InternalStatusChip } from '../../components/ui/InternalStatusChip';
 import { VulnsFilters } from './VulnsFilters';
 import { format } from 'date-fns';
 import { InternalStatusOptions } from '../../types/models';
@@ -316,21 +317,13 @@ export function VulnsTable() {
                     )}
                   </TableCell>
                   <TableCell>
-                    <FormControl fullWidth size="small" onClick={(e) => e.stopPropagation()}>
-                      <Select
-                        value={vuln.internalStatus || ''}
-                        displayEmpty
-                        onChange={async (e) => {
-                          await vulnsApi.update(vuln.id, { internalStatus: e.target.value || null });
-                          queryClient.invalidateQueries(['vulns']);
-                        }}
-                      >
-                        <MenuItem value=""><em>None</em></MenuItem>
-                        {InternalStatusOptions.map((opt) => (
-                          <MenuItem key={opt} value={opt}>{opt}</MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
+                    <InternalStatusChip
+                      value={vuln.internalStatus || ''}
+                      onChange={async (newInternal) => {
+                        await vulnsApi.update(vuln.id, { internalStatus: newInternal || null });
+                        queryClient.invalidateQueries(['vulns']);
+                      }}
+                    />
                   </TableCell>
                 </TableRow>
               );

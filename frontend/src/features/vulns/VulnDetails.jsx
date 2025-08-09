@@ -22,6 +22,7 @@ import { SeverityChip } from '../../components/ui/SeverityChip';
 import { StatusChip } from '../../components/ui/StatusChip';
 import { TagList } from '../../components/ui/TagList';
 import { Severity, VulnStatus, InternalStatusOptions } from '../../types/models';
+import { InternalStatusChip } from '../../components/ui/InternalStatusChip';
 import { format } from 'date-fns';
 import { useState } from 'react';
 
@@ -325,9 +326,10 @@ export function VulnDetails() {
                     <Typography variant="subtitle2" color="text.secondary">
                       Internal Status
                     </Typography>
-                    <Typography variant="body1">
-                      {vuln.internalStatus || 'None'}
-                    </Typography>
+                    <InternalStatusChip
+                      value={vuln.internalStatus || ''}
+                      onChange={(val) => updateVulnMutation.mutate({ internalStatus: val || null })}
+                    />
                   </Box>
 
                   <Box>

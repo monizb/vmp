@@ -22,6 +22,7 @@ import { ArrowBack, Download, BugReport } from '@mui/icons-material';
 import { reportsApi, vulnsApi, appsApi } from '../../api/endpoints';
 import { SeverityChip } from '../../components/ui/SeverityChip';
 import { StatusChip } from '../../components/ui/StatusChip';
+import { InternalStatusChip } from '../../components/ui/InternalStatusChip';
 import { PlatformBadge } from '../../components/ui/PlatformBadge';
 import { format } from 'date-fns';
 import { InternalStatusOptions } from '../../types/models';
@@ -243,19 +244,10 @@ export function ReportDetails() {
                     ))}
                   </Box>
                   <Box sx={{ mt: 1, display: 'flex', gap: 2, alignItems: 'center', width: '100%' }}>
-                    <FormControl size="small" sx={{ minWidth: 240 }} onClick={(e) => e.stopPropagation()}>
-                      <InputLabel>Internal Status</InputLabel>
-                      <Select
-                        value={vuln.internalStatus || ''}
-                        label="Internal Status"
-                        onChange={(e) => updateVulnMutation.mutate({ vulnId: vuln.id, data: { internalStatus: e.target.value } })}
-                      >
-                        <MenuItem value="">None</MenuItem>
-                        {InternalStatusOptions.map((opt) => (
-                          <MenuItem key={opt} value={opt}>{opt}</MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
+                    <InternalStatusChip
+                      value={vuln.internalStatus || ''}
+                      onChange={(val) => updateVulnMutation.mutate({ vulnId: vuln.id, data: { internalStatus: val || null } })}
+                    />
                   </Box>
                 </ListItem>
                 {index < reportVulns.length - 1 && <Divider />}
