@@ -210,6 +210,48 @@ export default async function vulnRoutes(fastify, options) {
     }
   });
 
+  // Analytics summary with optional filters
+  fastify.get('/vulns/analytics/summary', async (request, reply) => {
+    try {
+      const summary = await vulnService.getAnalyticsSummary(request.query || {});
+      return summary;
+    } catch (error) {
+      reply.code(500).send({ error: 'Internal server error', message: error.message });
+    }
+  });
+
+  // Time series of opened vs fixed
+  fastify.get('/vulns/analytics/timeseries', async (request, reply) => {
+    try {
+      const { interval, periods, ...filters } = request.query || {};
+      const ts = await vulnService.getTimeSeries({ interval, periods: periods ? parseInt(periods) : undefined, filters });
+      return ts;
+    } catch (error) {
+      reply.code(500).send({ error: 'Internal server error', message: error.message });
+    }
+  });
+
+  // Mean time to remediate
+  fastify.get('/vulns/analytics/mttr', async (request, reply) => {
+    try {
+      const mttr = await vulnService.getMTTR(request.query || {});
+      return mttr;
+    } catch (error) {
+      reply.code(500).send({ error: 'Internal server error', message: error.message });
+    }
+  });
+
+  // Top applications by open vulns
+  fastify.get('/vulns/analytics/top-apps', async (request, reply) => {
+    try {
+      const { limit, ...filters } = request.query || {};
+      const top = await vulnService.getTopApps(limit ? parseInt(limit) : 5, filters);
+      return top;
+    } catch (error) {
+      reply.code(500).send({ error: 'Internal server error', message: error.message });
+    }
+  });
+
   // Bulk create vulnerabilities (Admin, Security only)
   fastify.post('/vulns/bulk', {
     preHandler: requireRole(['Admin', 'Security'])

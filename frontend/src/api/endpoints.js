@@ -77,6 +77,10 @@ export const vulnsApi = {
   getDueThisWeek: () => apiClient.get('/vulns/due-this-week'),
   getUpcomingRetests: () => apiClient.get('/vulns/upcoming-retests'),
   getStats: () => apiClient.get('/vulns/stats'),
+  getAnalyticsSummary: (filters = {}) => apiClient.get('/vulns/analytics/summary', filters),
+  getAnalyticsTimeSeries: (params = {}) => apiClient.get('/vulns/analytics/timeseries', params),
+  getAnalyticsMTTR: (filters = {}) => apiClient.get('/vulns/analytics/mttr', filters),
+  getTopApps: (params = {}) => apiClient.get('/vulns/analytics/top-apps', params),
 }; 
 
 export const viewsApi = {
