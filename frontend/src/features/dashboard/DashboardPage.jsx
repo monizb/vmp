@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Grid,
@@ -28,7 +28,7 @@ import { Severity, VulnStatus } from '../../types/models';
 
 export function DashboardPage() {
   const [interval, setInterval] = useState('month');
-  const [periods, setPeriods] = useState(6);
+  const [periods] = useState(6);
   const [severityFilter, setSeverityFilter] = useState('');
   const [applicationFilter, setApplicationFilter] = useState('');
 
@@ -57,32 +57,7 @@ export function DashboardPage() {
   const apps = appsData || [];
   const teams = teamsData || [];
 
-  // Calculate statistics
-  const totalVulns = vulns.length;
-  const openVulns = vulns.filter(v => v.status !== VulnStatus.Fixed && v.status !== VulnStatus.Closed).length;
-  const criticalVulns = vulns.filter(v => v.severity === Severity.Critical).length;
-  const highVulns = vulns.filter(v => v.severity === Severity.High).length;
-  const overdueVulns = vulns.filter(v => {
-    if (v.status === VulnStatus.Fixed || v.status === VulnStatus.Closed) return false;
-    if (!v.dueDate) return false;
-    return new Date(v.dueDate) < new Date();
-  }).length;
-
-  const severityData = [
-    { name: 'Critical', value: criticalVulns, color: '#9c27b0' },
-    { name: 'High', value: highVulns, color: '#f44336' },
-    { name: 'Medium', value: vulns.filter(v => v.severity === Severity.Medium).length, color: '#ff9800' },
-    { name: 'Low', value: vulns.filter(v => v.severity === Severity.Low).length, color: '#4caf50' },
-  ];
-
-  const statusData = [
-    { name: 'Open', value: vulns.filter(v => v.status === VulnStatus.Open).length },
-    { name: 'In Progress', value: vulns.filter(v => v.status === VulnStatus.InProgress).length },
-    { name: 'Fixed', value: vulns.filter(v => v.status === VulnStatus.Fixed).length },
-    { name: 'Closed', value: vulns.filter(v => v.status === VulnStatus.Closed).length },
-  ];
-
-  // Analytics queries
+  // Analytics queries (must be declared before using below)
   const { data: summary } = useQuery({
     queryKey: ['analytics', 'summary', severityFilter, applicationFilter],
     queryFn: () => vulnsApi.getAnalyticsSummary({ severity: severityFilter || undefined, applicationId: applicationFilter || undefined }),
@@ -102,6 +77,105 @@ export function DashboardPage() {
     queryKey: ['analytics', 'top-apps', severityFilter],
     queryFn: () => vulnsApi.getTopApps({ limit: 5, severity: severityFilter || undefined }),
   });
+  // Fallback summary if analytics API fails
+  const fallbackSummary = (() => {
+    const today = new Date();
+    const isOpen = (v) => v.status !== VulnStatus.Fixed && v.status !== VulnStatus.Closed;
+    const bySeverity = {};
+    const byStatus = {};
+    const byInternalStatus = {};
+    const byApp = {};
+    let openNotOverdue = 0;
+    let openTotalWithDueDate = 0;
+    vulns.forEach((v) => {
+      bySeverity[v.severity] = (bySeverity[v.severity] || 0) + 1;
+      byStatus[v.status] = (byStatus[v.status] || 0) + 1;
+      if (v.internalStatus) byInternalStatus[v.internalStatus] = (byInternalStatus[v.internalStatus] || 0) + 1;
+      if (v.applicationId) byApp[v.applicationId] = (byApp[v.applicationId] || 0) + 1;
+      if (isOpen(v) && v.dueDate) {
+        openTotalWithDueDate += 1;
+        if (new Date(v.dueDate) >= today) openNotOverdue += 1;
+      }
+    });
+    const overdue = vulns.filter((v) => isOpen(v) && v.dueDate && new Date(v.dueDate) < today).length;
+    const open = vulns.filter(isOpen).length;
+    const compliancePercent = openTotalWithDueDate > 0 ? Math.round((openNotOverdue / openTotalWithDueDate) * 100) : 100;
+    return { total: vulns.length, open, overdue, bySeverity, byStatus, byInternalStatus, byApp, byTeam: {}, sla: { openNotOverdue, openTotalWithDueDate, compliancePercent } };
+  })();
+
+  const summaryData = summary || fallbackSummary;
+
+  // Fallback timeseries (last 6 months)
+  const fallbackTimeSeries = (() => {
+    const end = new Date();
+    const buckets = [];
+    const start = new Date(end.getFullYear(), end.getMonth() - 5, 1);
+    const key = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const next = (d) => new Date(d.getFullYear(), d.getMonth() + 1, 1);
+    let cursor = new Date(start);
+    while (cursor <= end) {
+      buckets.push({ period: key(cursor), opened: 0, fixed: 0 });
+      cursor = next(cursor);
+    }
+    const indexByKey = Object.fromEntries(buckets.map((b, i) => [b.period, i]));
+    vulns.forEach((v) => {
+      const disc = v.discoveredDate && new Date(v.discoveredDate);
+      if (disc && disc >= start && disc <= end) {
+        const k = key(new Date(disc.getFullYear(), disc.getMonth(), 1));
+        if (indexByKey[k] !== undefined) buckets[indexByKey[k]].opened += 1;
+      }
+      const res = v.resolvedDate && new Date(v.resolvedDate);
+      if (res && res >= start && res <= end) {
+        const k = key(new Date(res.getFullYear(), res.getMonth(), 1));
+        if (indexByKey[k] !== undefined) buckets[indexByKey[k]].fixed += 1;
+      }
+    });
+    return { buckets };
+  })();
+
+  const timeSeriesData = (timeseries && Array.isArray(timeseries.buckets)) ? timeseries.buckets : fallbackTimeSeries.buckets;
+
+  // Fallback MTTR
+  const fallbackMttr = (() => {
+    const durationsBySev = {};
+    vulns.forEach((v) => {
+      if (v.discoveredDate && v.resolvedDate) {
+        const d = Math.max(0, Math.round((new Date(v.resolvedDate) - new Date(v.discoveredDate)) / (1000 * 60 * 60 * 24)));
+        const sev = v.severity || 'Unknown';
+        durationsBySev[sev] = durationsBySev[sev] || [];
+        durationsBySev[sev].push(d);
+      }
+    });
+    const bySeverity = Object.fromEntries(Object.entries(durationsBySev).map(([sev, arr]) => {
+      const avg = arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : 0;
+      return [sev, { average: avg }];
+    }));
+    return { bySeverity };
+  })();
+
+  const mttrData = mttr || fallbackMttr;
+
+  // Calculate statistics
+  const totalVulns = vulns.length;
+  const openVulns = vulns.filter(v => v.status !== VulnStatus.Fixed && v.status !== VulnStatus.Closed).length;
+  const criticalVulns = vulns.filter(v => v.severity === Severity.Critical).length;
+  const highVulns = vulns.filter(v => v.severity === Severity.High).length;
+  const overdueVulns = vulns.filter(v => {
+    if (v.status === VulnStatus.Fixed || v.status === VulnStatus.Closed) return false;
+    if (!v.dueDate) return false;
+    return new Date(v.dueDate) < new Date();
+  }).length;
+
+  const severityData = [
+    { name: 'Critical', value: criticalVulns, color: '#9c27b0' },
+    { name: 'High', value: highVulns, color: '#f44336' },
+    { name: 'Medium', value: vulns.filter(v => v.severity === Severity.Medium).length, color: '#ff9800' },
+    { name: 'Low', value: vulns.filter(v => v.severity === Severity.Low).length, color: '#4caf50' },
+  ];
+
+  // statusData replaced by analytics charts
+
+  // (queries defined above)
 
   const StatCard = ({ title, value, icon, color = 'primary', subtitle }) => (
     <Card sx={{ borderRadius: 3, boxShadow: 3, border: 1, borderColor: 'divider' }}>
@@ -173,10 +247,10 @@ export function DashboardPage() {
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="Total Vulnerabilities"
-            value={summary?.total ?? totalVulns}
+            value={summaryData.total ?? totalVulns}
             icon={<BugReport />}
             color="error"
-            subtitle={`${summary?.open ?? openVulns} open issues`}
+            subtitle={`${summaryData.open ?? openVulns} open issues`}
           />
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
@@ -200,10 +274,10 @@ export function DashboardPage() {
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
             title="SLA Compliance"
-            value={`${summary?.sla?.compliancePercent ?? 100}%`}
+            value={`${summaryData.sla?.compliancePercent ?? 100}%`}
             icon={<BugReport />}
             color="error"
-            subtitle={`${summary?.overdue ?? overdueVulns} overdue issues`}
+            subtitle={`${summaryData.overdue ?? overdueVulns} overdue issues`}
           />
         </Grid>
       </Grid>
@@ -242,7 +316,7 @@ export function DashboardPage() {
                 Opened vs Fixed ({interval})
               </Typography>
               <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={timeseries?.buckets || []}>
+                <LineChart data={timeSeriesData}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="period" />
                   <YAxis />
@@ -265,7 +339,7 @@ export function DashboardPage() {
                 Internal Status Distribution
               </Typography>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={Object.entries(summary?.byInternalStatus || {}).map(([name, value]) => ({ name, value }))}>
+                <BarChart data={Object.entries(summaryData.byInternalStatus || {}).map(([name, value]) => ({ name, value }))}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" interval={0} angle={-15} textAnchor="end" height={60} />
                   <YAxis />
@@ -284,7 +358,7 @@ export function DashboardPage() {
                 MTTR by Severity (days)
               </Typography>
               <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={Object.entries(mttr?.bySeverity || {}).map(([name, val]) => ({ name, value: val.average }))}>
+                <BarChart data={Object.entries(mttrData.bySeverity || {}).map(([name, val]) => ({ name, value: val.average }))}>
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" />
                   <YAxis />
@@ -331,8 +405,8 @@ export function DashboardPage() {
                   <Pie
                     dataKey="value"
                     data={[
-                      { name: 'Compliant', value: summary?.sla?.openNotOverdue || 0 },
-                      { name: 'Non-compliant', value: (summary?.sla?.openTotalWithDueDate || 0) - (summary?.sla?.openNotOverdue || 0) },
+                      { name: 'Compliant', value: summaryData.sla?.openNotOverdue || 0 },
+                      { name: 'Non-compliant', value: (summaryData.sla?.openTotalWithDueDate || 0) - (summaryData.sla?.openNotOverdue || 0) },
                     ]}
                     cx="50%"
                     cy="50%"
