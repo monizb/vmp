@@ -36,8 +36,9 @@ export class SavedViewService {
   async update(id, ownerUserId, viewData) {
     const collection = await this.getCollection();
     const updateData = { ...viewData, updatedAt: new Date() };
+    const ownerIdObj = new ObjectId(ownerUserId);
     const result = await collection.findOneAndUpdate(
-      { _id: new ObjectId(id), ownerUserId: new ObjectId(ownerUserId) },
+      { _id: new ObjectId(id), ownerUserId: { $in: [ownerIdObj, ownerUserId] } },
       { $set: updateData },
       { returnDocument: 'after' }
     );
@@ -46,7 +47,8 @@ export class SavedViewService {
 
   async delete(id, ownerUserId) {
     const collection = await this.getCollection();
-    const result = await collection.deleteOne({ _id: new ObjectId(id), ownerUserId: new ObjectId(ownerUserId) });
+    const ownerIdObj = new ObjectId(ownerUserId);
+    const result = await collection.deleteOne({ _id: new ObjectId(id), ownerUserId: { $in: [ownerIdObj, ownerUserId] } });
     return result.deletedCount > 0;
   }
 }

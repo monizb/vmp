@@ -28,7 +28,7 @@ import {
   FormHelperText,
 } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { vulnsApi, appsApi, reportsApi, usersApi, settingsApi } from '../../api/endpoints';
+import { vulnsApi, appsApi, reportsApi, usersApi, settingsApi, viewsApi } from '../../api/endpoints';
 import { SeverityChip } from '../../components/ui/SeverityChip';
 import { StatusChip } from '../../components/ui/StatusChip';
 import { InternalStatusChip } from '../../components/ui/InternalStatusChip';
@@ -44,6 +44,8 @@ export function VulnsTable() {
   const [pageSize, setPageSize] = useState(10);
   const [filters, setFilters] = useState({});
   const [openAddDialog, setOpenAddDialog] = useState(false);
+  const [openSaveViewDialog, setOpenSaveViewDialog] = useState(false);
+  const [saveViewData, setSaveViewData] = useState({ name: '', entityType: 'vulns' });
   const [newVuln, setNewVuln] = useState({ title: '', description: '', severity: 'Medium', applicationId: '', reportId: '', assignedToUserId: '', dueDate: '', status: 'New', internalStatus: '' });
 
   const { data: vulnsData, isLoading, error } = useQuery({
@@ -70,6 +72,17 @@ export function VulnsTable() {
     queryKey: ['settings', 'due-dates'],
     queryFn: () => settingsApi.getDueDateSettings(),
   });
+
+  const handleOpenSaveView = () => {
+    setSaveViewData({ name: '', entityType: 'vulns' });
+    setOpenSaveViewDialog(true);
+  };
+
+  const handleSaveCurrentView = async () => {
+    if (!saveViewData.name) return;
+    await viewsApi.create({ name: saveViewData.name, entityType: 'vulns', filters: filters });
+    setOpenSaveViewDialog(false);
+  };
 
   const handleChangePage = (event, newPage) => {
     setPage(newPage);
@@ -202,6 +215,7 @@ export function VulnsTable() {
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography variant="h5">Vulnerabilities</Typography>
           <Box sx={{ display: 'flex', gap: 1 }}>
+            <Button variant="outlined" onClick={handleOpenSaveView} disabled={Object.keys(filters || {}).length === 0}>Save Current View</Button>
             <Button variant="outlined" onClick={() => navigate('/views')}>Views</Button>
             <Button variant="contained" onClick={() => setOpenAddDialog(true)}>Add Vulnerability</Button>
           </Box>
@@ -404,6 +418,33 @@ export function VulnsTable() {
         <DialogActions>
           <Button onClick={() => setOpenAddDialog(false)}>Cancel</Button>
           <Button variant="contained" onClick={handleCreateVuln} disabled={!newVuln.title || !newVuln.description || !newVuln.severity || !newVuln.applicationId}>Create</Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={openSaveViewDialog} onClose={() => setOpenSaveViewDialog(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Save Current View</DialogTitle>
+        <DialogContent dividers>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
+            <TextField
+              label="View Name"
+              value={saveViewData.name}
+              onChange={(e) => setSaveViewData({ ...saveViewData, name: e.target.value })}
+              fullWidth
+              required
+            />
+            <Box>
+              <Typography variant="subtitle2" gutterBottom>Current Filters:</Typography>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                {Object.entries(filters || {}).map(([key, value]) => (
+                  value ? <Chip key={key} label={`${key}: ${value}`} size="small" variant="outlined" /> : null
+                ))}
+              </Box>
+            </Box>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenSaveViewDialog(false)}>Cancel</Button>
+          <Button variant="contained" onClick={handleSaveCurrentView} disabled={!saveViewData.name}>Save View</Button>
         </DialogActions>
       </Dialog>
     </Box>

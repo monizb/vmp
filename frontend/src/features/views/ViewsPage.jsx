@@ -35,10 +35,8 @@ export function ViewsPage() {
   const location = useLocation();
   const queryClient = useQueryClient();
   const [openEditDialog, setOpenEditDialog] = useState(false);
-  const [openSaveDialog, setOpenSaveDialog] = useState(false);
   const [editingView, setEditingView] = useState(null);
   const [editData, setEditData] = useState({ name: '', entityType: '' });
-  const [saveData, setSaveData] = useState({ name: '', entityType: 'vulns', filters: {} });
 
   const { data: views, isLoading, error } = useQuery({
     queryKey: ['views'],
@@ -62,14 +60,7 @@ export function ViewsPage() {
     },
   });
 
-  const createMutation = useMutation({
-    mutationFn: (data) => viewsApi.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries(['views']);
-      setOpenSaveDialog(false);
-      setSaveData({ name: '', entityType: 'vulns', filters: {} });
-    },
-  });
+  // Removed create/save flow from Views page; saving is now done from the Vulnerabilities page
 
   const handleEdit = (view) => {
     setEditingView(view);
@@ -87,19 +78,7 @@ export function ViewsPage() {
     createMutation.mutate(saveData);
   };
 
-  // Parse filters from URL when component mounts
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const filters = {};
-    ['applicationId', 'status', 'severity', 'assignedTo', 'search', 'internalStatus'].forEach((key) => {
-      const value = params.get(key);
-      if (value) filters[key] = value;
-    });
-    
-    if (Object.keys(filters).length > 0) {
-      setSaveData(prev => ({ ...prev, filters }));
-    }
-  }, [location.search]);
+  // No-op: save current view functionality has moved to the Vulnerabilities list page
 
   const handleDelete = (id) => {
     if (window.confirm('Are you sure you want to delete this view?')) {
@@ -167,13 +146,6 @@ export function ViewsPage() {
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
         <Typography variant="h4">Saved Views</Typography>
-        <Button 
-          variant="contained" 
-          onClick={() => setOpenSaveDialog(true)}
-          disabled={Object.keys(saveData.filters).length === 0}
-        >
-          Save Current View
-        </Button>
       </Box>
       
       <TableContainer component={Paper}>
@@ -290,57 +262,7 @@ export function ViewsPage() {
         </DialogActions>
       </Dialog>
 
-      <Dialog open={openSaveDialog} onClose={() => setOpenSaveDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Save Current View</DialogTitle>
-        <DialogContent dividers>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
-            <TextField
-              label="View Name"
-              value={saveData.name}
-              onChange={(e) => setSaveData({ ...saveData, name: e.target.value })}
-              fullWidth
-              required
-            />
-            <FormControl fullWidth>
-              <InputLabel>Type</InputLabel>
-              <Select
-                value={saveData.entityType}
-                label="Type"
-                onChange={(e) => setSaveData({ ...saveData, entityType: e.target.value })}
-                required
-              >
-                <MenuItem value="vulns">Vulnerabilities</MenuItem>
-                <MenuItem value="reports">Reports</MenuItem>
-              </Select>
-            </FormControl>
-            {Object.keys(saveData.filters).length > 0 && (
-              <Box>
-                <Typography variant="subtitle2" gutterBottom>Current Filters:</Typography>
-                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                  {Object.entries(saveData.filters).map(([key, value]) => (
-                    <Chip
-                      key={key}
-                      label={`${key}: ${value}`}
-                      size="small"
-                      variant="outlined"
-                    />
-                  ))}
-                </Box>
-              </Box>
-            )}
-          </Box>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenSaveDialog(false)}>Cancel</Button>
-          <Button 
-            variant="contained" 
-            onClick={handleSaveView}
-            disabled={!saveData.name || !saveData.entityType}
-          >
-            Save View
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Save Current View dialog removed; feature moved to Vulnerabilities page */}
     </Box>
   );
 } 
