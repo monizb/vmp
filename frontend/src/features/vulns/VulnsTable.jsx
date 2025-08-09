@@ -33,6 +33,7 @@ import { SeverityChip } from '../../components/ui/SeverityChip';
 import { StatusChip } from '../../components/ui/StatusChip';
 import { VulnsFilters } from './VulnsFilters';
 import { format } from 'date-fns';
+import { InternalStatusOptions } from '../../types/models';
 
 export function VulnsTable() {
   const navigate = useNavigate();
@@ -42,7 +43,7 @@ export function VulnsTable() {
   const [pageSize, setPageSize] = useState(10);
   const [filters, setFilters] = useState({});
   const [openAddDialog, setOpenAddDialog] = useState(false);
-  const [newVuln, setNewVuln] = useState({ title: '', description: '', severity: 'Medium', applicationId: '', reportId: '', assignedToUserId: '', dueDate: '' });
+  const [newVuln, setNewVuln] = useState({ title: '', description: '', severity: 'Medium', applicationId: '', reportId: '', assignedToUserId: '', dueDate: '', status: 'New', internalStatus: '' });
 
   const { data: vulnsData, isLoading, error } = useQuery({
     queryKey: ['vulns', { page: page + 1, pageSize, ...filters }],
@@ -112,9 +113,9 @@ export function VulnsTable() {
 
   const handleCreateVuln = async () => {
     if (!newVuln.title || !newVuln.description || !newVuln.severity || !newVuln.applicationId) return;
-    await vulnsApi.create({ ...newVuln, dueDate: newVuln.dueDate || undefined });
+    await vulnsApi.create({ ...newVuln, dueDate: newVuln.dueDate || undefined, internalStatus: newVuln.internalStatus || undefined });
     setOpenAddDialog(false);
-    setNewVuln({ title: '', description: '', severity: 'Medium', applicationId: '', reportId: '', assignedToUserId: '', dueDate: '' });
+    setNewVuln({ title: '', description: '', severity: 'Medium', applicationId: '', reportId: '', assignedToUserId: '', dueDate: '', status: 'New', internalStatus: '' });
     queryClient.invalidateQueries(['vulns']);
   };
 
@@ -151,7 +152,7 @@ export function VulnsTable() {
       <Box>
         <VulnsFilters onFiltersChange={handleFiltersChange} />
         <TableContainer component={Paper}>
-          <Table>
+          <Table size="small">
             <TableHead>
               <TableRow>
                 <TableCell>Title</TableCell>
@@ -161,11 +162,13 @@ export function VulnsTable() {
                 <TableCell>Status</TableCell>
                 <TableCell>Assigned To</TableCell>
                 <TableCell>Due Date</TableCell>
+                <TableCell>Internal</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
               {Array.from(new Array(5)).map((_, index) => (
                 <TableRow key={index}>
+                  <TableCell><Skeleton /></TableCell>
                   <TableCell><Skeleton /></TableCell>
                   <TableCell><Skeleton /></TableCell>
                   <TableCell><Skeleton /></TableCell>
@@ -205,9 +208,9 @@ export function VulnsTable() {
         <VulnsFilters onFiltersChange={handleFiltersChange} value={filters} />
       </Box>
       <TableContainer component={Paper}>
-        <Table>
+        <Table size="small" sx={{ '& tbody tr:nth-of-type(odd)': { backgroundColor: 'action.hover' } }}>
           <TableHead>
-            <TableRow>
+            <TableRow sx={{ position: 'sticky', top: 0, backgroundColor: 'background.paper', zIndex: 1 }}>
               <TableCell>Title</TableCell>
               <TableCell>Application</TableCell>
               <TableCell>Report</TableCell>
@@ -215,6 +218,7 @@ export function VulnsTable() {
               <TableCell>Status</TableCell>
               <TableCell>Assigned To</TableCell>
               <TableCell>Due Date</TableCell>
+              <TableCell>Internal</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -287,7 +291,13 @@ export function VulnsTable() {
                     <SeverityChip severity={vuln.severity} />
                   </TableCell>
                   <TableCell>
-                    <StatusChip status={vuln.status} />
+                    <StatusChip
+                      status={vuln.status}
+                      onChange={async (newStatus) => {
+                        await vulnsApi.update(vuln.id, { status: newStatus });
+                        queryClient.invalidateQueries(['vulns']);
+                      }}
+                    />
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2">
@@ -304,6 +314,23 @@ export function VulnsTable() {
                         No due date
                       </Typography>
                     )}
+                  </TableCell>
+                  <TableCell>
+                    <FormControl fullWidth size="small" onClick={(e) => e.stopPropagation()}>
+                      <Select
+                        value={vuln.internalStatus || ''}
+                        displayEmpty
+                        onChange={async (e) => {
+                          await vulnsApi.update(vuln.id, { internalStatus: e.target.value || null });
+                          queryClient.invalidateQueries(['vulns']);
+                        }}
+                      >
+                        <MenuItem value=""><em>None</em></MenuItem>
+                        {InternalStatusOptions.map((opt) => (
+                          <MenuItem key={opt} value={opt}>{opt}</MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
                   </TableCell>
                 </TableRow>
               );
@@ -365,6 +392,19 @@ export function VulnsTable() {
                   newVuln.dueDate ? 'Manual override' : 'Set manually or will be auto-assigned'
               }
             />
+            <FormControl fullWidth>
+              <InputLabel>Status</InputLabel>
+              <Select value={newVuln.status} label="Status" onChange={(e) => setNewVuln({ ...newVuln, status: e.target.value })}>
+                {['New','Open','In Progress','Fixed','Reopened','Closed'].map(s => <MenuItem key={s} value={s}>{s}</MenuItem>)}
+              </Select>
+            </FormControl>
+            <FormControl fullWidth>
+              <InputLabel>Internal Status</InputLabel>
+              <Select value={newVuln.internalStatus} label="Internal Status" onChange={(e) => setNewVuln({ ...newVuln, internalStatus: e.target.value })}>
+                <MenuItem value=""><em>None</em></MenuItem>
+                {InternalStatusOptions.map(s => <MenuItem key={s} value={s}>{s}</MenuItem>)}
+              </Select>
+            </FormControl>
             <TextField label="Description" value={newVuln.description} onChange={(e) => setNewVuln({ ...newVuln, description: e.target.value })} multiline rows={4} fullWidth sx={{ gridColumn: { md: '1 / span 2' } }} />
           </Box>
         </DialogContent>

@@ -180,9 +180,9 @@ export function ReportsTable() {
       </Box>
 
       <TableContainer component={Paper}>
-        <Table>
+        <Table size="small" sx={{ '& tbody tr:nth-of-type(odd)': { backgroundColor: 'action.hover' } }}>
           <TableHead>
-            <TableRow>
+            <TableRow sx={{ position: 'sticky', top: 0, backgroundColor: 'background.paper', zIndex: 1 }}>
               <TableCell>Report Name</TableCell>
               <TableCell>Application</TableCell>
               <TableCell>Vendor</TableCell>

@@ -24,6 +24,7 @@ import { SeverityChip } from '../../components/ui/SeverityChip';
 import { StatusChip } from '../../components/ui/StatusChip';
 import { PlatformBadge } from '../../components/ui/PlatformBadge';
 import { format } from 'date-fns';
+import { InternalStatusOptions } from '../../types/models';
 
 export function ReportDetails() {
   const { id } = useParams();
@@ -223,7 +224,12 @@ export function ReportDetails() {
                       {vuln.title}
                     </Typography>
                     <SeverityChip severity={vuln.severity} />
-                    <StatusChip status={vuln.status} />
+                    <StatusChip
+                      status={vuln.status}
+                      onChange={(newStatus) =>
+                        updateVulnMutation.mutate({ vulnId: vuln.id, data: { status: newStatus } })
+                      }
+                    />
                   </Box>
                   <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                     {vuln.description.substring(0, 200)}...
@@ -245,10 +251,9 @@ export function ReportDetails() {
                         onChange={(e) => updateVulnMutation.mutate({ vulnId: vuln.id, data: { internalStatus: e.target.value } })}
                       >
                         <MenuItem value="">None</MenuItem>
-                        <MenuItem value="Stuck">Stuck</MenuItem>
-                        <MenuItem value="Fix in progress">Fix in progress</MenuItem>
-                        <MenuItem value="False positive">False positive</MenuItem>
-                        <MenuItem value="Exemption requested">Exemption requested</MenuItem>
+                        {InternalStatusOptions.map((opt) => (
+                          <MenuItem key={opt} value={opt}>{opt}</MenuItem>
+                        ))}
                       </Select>
                     </FormControl>
                   </Box>

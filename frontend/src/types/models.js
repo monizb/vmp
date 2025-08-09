@@ -22,6 +22,14 @@ export const VulnStatus = {
   Closed: 'Closed',
 };
 
+// Internal workflow statuses for tracking progress outside of vendor-facing statuses
+export const InternalStatusOptions = [
+  'Stuck',
+  'Fix in progress',
+  'False positive',
+  'Exemption requested',
+];
+
 export const Role = {
   Admin: 'Admin',
   Security: 'Security',
@@ -43,6 +51,13 @@ export const StatusColors = {
   [VulnStatus.Fixed]: '#4caf50',
   [VulnStatus.Reopened]: '#f44336',
   [VulnStatus.Closed]: '#757575',
+};
+
+export const InternalStatusColors = {
+  'Stuck': '#c62828',
+  'Fix in progress': '#6a1b9a',
+  'False positive': '#2e7d32',
+  'Exemption requested': '#ef6c00',
 };
 
 export class Team {

@@ -21,7 +21,7 @@ import { vulnsApi, appsApi, usersApi, settingsApi } from '../../api/endpoints';
 import { SeverityChip } from '../../components/ui/SeverityChip';
 import { StatusChip } from '../../components/ui/StatusChip';
 import { TagList } from '../../components/ui/TagList';
-import { Severity, VulnStatus } from '../../types/models';
+import { Severity, VulnStatus, InternalStatusOptions } from '../../types/models';
 import { format } from 'date-fns';
 import { useState } from 'react';
 
@@ -158,7 +158,10 @@ export function VulnDetails() {
             </Typography>
             <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
               <SeverityChip severity={vuln.severity} />
-              <StatusChip status={vuln.status} />
+              <StatusChip
+                status={vuln.status}
+                onChange={(newStatus) => updateVulnMutation.mutate({ status: newStatus })}
+              />
             </Box>
           </Box>
         </Box>
@@ -251,10 +254,9 @@ export function VulnDetails() {
                       onChange={(e) => setEditData({ ...editData, internalStatus: e.target.value })}
                     >
                       <MenuItem value="">None</MenuItem>
-                      <MenuItem value="Stuck">Stuck</MenuItem>
-                      <MenuItem value="Fix in progress">Fix in progress</MenuItem>
-                      <MenuItem value="False positive">False positive</MenuItem>
-                      <MenuItem value="Exemption requested">Exemption requested</MenuItem>
+                      {InternalStatusOptions.map((opt) => (
+                        <MenuItem key={opt} value={opt}>{opt}</MenuItem>
+                      ))}
                     </Select>
                   </FormControl>
 
@@ -313,7 +315,10 @@ export function VulnDetails() {
                     <Typography variant="subtitle2" color="text.secondary">
                       Status
                     </Typography>
-                    <StatusChip status={vuln.status} />
+                    <StatusChip
+                      status={vuln.status}
+                      onChange={(newStatus) => updateVulnMutation.mutate({ status: newStatus })}
+                    />
                   </Box>
 
                   <Box>
