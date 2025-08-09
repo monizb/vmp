@@ -25,9 +25,10 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  FormHelperText,
 } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { vulnsApi, appsApi, reportsApi, usersApi } from '../../api/endpoints';
+import { vulnsApi, appsApi, reportsApi, usersApi, settingsApi } from '../../api/endpoints';
 import { SeverityChip } from '../../components/ui/SeverityChip';
 import { StatusChip } from '../../components/ui/StatusChip';
 import { VulnsFilters } from './VulnsFilters';
@@ -61,6 +62,11 @@ export function VulnsTable() {
   const { data: users } = useQuery({
     queryKey: ['users'],
     queryFn: () => usersApi.getAll(),
+  });
+
+  const { data: dueDateSettings } = useQuery({
+    queryKey: ['settings', 'due-dates'],
+    queryFn: () => settingsApi.getDueDateSettings(),
   });
 
   const handleChangePage = (event, newPage) => {
@@ -110,6 +116,30 @@ export function VulnsTable() {
     setOpenAddDialog(false);
     setNewVuln({ title: '', description: '', severity: 'Medium', applicationId: '', reportId: '', assignedToUserId: '', dueDate: '' });
     queryClient.invalidateQueries(['vulns']);
+  };
+
+  const calculateAutoDueDate = (severity) => {
+    if (!dueDateSettings?.autoAssignDueDates || !dueDateSettings?.dueDateTimelines?.[severity]) {
+      return null;
+    }
+    const days = dueDateSettings.dueDateTimelines[severity];
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + days);
+    return dueDate.toISOString().split('T')[0];
+  };
+
+  const getAutoAssignedDueDate = () => {
+    if (newVuln.dueDate) return null; // Manual date is set
+    return calculateAutoDueDate(newVuln.severity);
+  };
+
+  const handleSeverityChange = (severity) => {
+    setNewVuln({ 
+      ...newVuln, 
+      severity,
+      // Clear manual due date when severity changes to show auto-assigned date
+      dueDate: ''
+    });
   };
 
 
@@ -298,7 +328,7 @@ export function VulnsTable() {
             <TextField label="Title" value={newVuln.title} onChange={(e) => setNewVuln({ ...newVuln, title: e.target.value })} required fullWidth />
             <FormControl fullWidth>
               <InputLabel>Severity</InputLabel>
-              <Select value={newVuln.severity} label="Severity" onChange={(e) => setNewVuln({ ...newVuln, severity: e.target.value })}>
+              <Select value={newVuln.severity} label="Severity" onChange={(e) => handleSeverityChange(e.target.value)}>
                 {['Low','Medium','High','Critical'].map(s => <MenuItem key={s} value={s}>{s}</MenuItem>)}
               </Select>
             </FormControl>
@@ -322,7 +352,19 @@ export function VulnsTable() {
                 {users?.map(u => <MenuItem key={u.id} value={u.id}>{u.name || u.email}</MenuItem>)}
               </Select>
             </FormControl>
-            <TextField type="date" label="Due Date" InputLabelProps={{ shrink: true }} value={newVuln.dueDate} onChange={(e) => setNewVuln({ ...newVuln, dueDate: e.target.value })} fullWidth />
+            <TextField 
+              type="date" 
+              label="Due Date" 
+              InputLabelProps={{ shrink: true }} 
+              value={newVuln.dueDate} 
+              onChange={(e) => setNewVuln({ ...newVuln, dueDate: e.target.value })} 
+              fullWidth 
+              helperText={
+                !newVuln.dueDate && getAutoAssignedDueDate() ? 
+                  `Auto-assigned: ${new Date(getAutoAssignedDueDate()).toLocaleDateString()} (${dueDateSettings?.dueDateTimelines?.[newVuln.severity]} days)` : 
+                  newVuln.dueDate ? 'Manual override' : 'Set manually or will be auto-assigned'
+              }
+            />
             <TextField label="Description" value={newVuln.description} onChange={(e) => setNewVuln({ ...newVuln, description: e.target.value })} multiline rows={4} fullWidth sx={{ gridColumn: { md: '1 / span 2' } }} />
           </Box>
         </DialogContent>

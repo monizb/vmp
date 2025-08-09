@@ -19,6 +19,7 @@ import { AppsPage } from '../features/apps/AppsPage';
 import { TeamsPage } from '../features/teams/TeamsPage';
 import { UsersPage } from '../features/users/UsersPage';
 import { SchedulePage } from '../features/schedule/SchedulePage';
+import { SettingsPage } from '../features/settings/SettingsPage';
 import { Role } from '../types/models';
 
 // Create a client
@@ -92,6 +93,14 @@ function App() {
                     }
                   />
                   <Route path="schedule" element={<SchedulePage />} />
+                  <Route
+                    path="settings"
+                    element={
+                      <RequireRole allowedRoles={[Role.Admin, Role.Security]}>
+                        <SettingsPage />
+                      </RequireRole>
+                    }
+                  />
                   <Route path="me" element={<div>Profile (Coming Soon)</div>} />
                 </Route>
               </Routes>

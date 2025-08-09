@@ -14,9 +14,10 @@ import {
   Select,
   MenuItem,
   TextField,
+  FormHelperText,
 } from '@mui/material';
 import { ArrowBack, Edit, Save, Cancel } from '@mui/icons-material';
-import { vulnsApi, appsApi, usersApi } from '../../api/endpoints';
+import { vulnsApi, appsApi, usersApi, settingsApi } from '../../api/endpoints';
 import { SeverityChip } from '../../components/ui/SeverityChip';
 import { StatusChip } from '../../components/ui/StatusChip';
 import { TagList } from '../../components/ui/TagList';
@@ -46,6 +47,11 @@ export function VulnDetails() {
     queryFn: () => usersApi.getAll(),
   });
 
+  const { data: dueDateSettings } = useQuery({
+    queryKey: ['settings', 'due-dates'],
+    queryFn: () => settingsApi.getDueDateSettings(),
+  });
+
   const updateVulnMutation = useMutation({
     mutationFn: (data) => vulnsApi.update(id, data),
     onSuccess: () => {
@@ -61,8 +67,29 @@ export function VulnDetails() {
       internalStatus: vuln.internalStatus || '',
       assignedToUserId: vuln.assignedToUserId || '',
       dueDate: vuln.dueDate ? vuln.dueDate.split('T')[0] : '',
+      severity: vuln.severity,
     });
     setEditMode(true);
+  };
+
+  const calculateAutoDueDate = (severity) => {
+    if (!dueDateSettings?.autoAssignDueDates || !dueDateSettings?.dueDateTimelines?.[severity]) {
+      return null;
+    }
+    const days = dueDateSettings.dueDateTimelines[severity];
+    const dueDate = new Date(vuln?.discoveredDate || new Date());
+    dueDate.setDate(dueDate.getDate() + days);
+    return dueDate.toISOString().split('T')[0];
+  };
+
+  const handleSeverityChange = (severity) => {
+    const autoAssignedDate = calculateAutoDueDate(severity);
+    setEditData({ 
+      ...editData, 
+      severity,
+      // Only auto-assign if no manual date was set
+      dueDate: editData.dueDate || autoAssignedDate || ''
+    });
   };
 
   const handleSave = () => {
@@ -255,6 +282,11 @@ export function VulnDetails() {
                     onChange={(e) => setEditData({ ...editData, dueDate: e.target.value })}
                     size="small"
                     InputLabelProps={{ shrink: true }}
+                    helperText={
+                      !editData.dueDate && calculateAutoDueDate(editData.severity) ? 
+                        `Would auto-assign: ${new Date(calculateAutoDueDate(editData.severity)).toLocaleDateString()} (${dueDateSettings?.dueDateTimelines?.[editData.severity]} days from discovery)` : 
+                        editData.dueDate ? 'Manual override' : 'Not set'
+                    }
                   />
 
                   <Box sx={{ display: 'flex', gap: 1 }}>

@@ -30,6 +30,7 @@ import {
   Logout,
   Security,
   ViewList,
+  Settings,
 } from '@mui/icons-material';
 import { useAuth } from '../../features/auth/AuthProvider';
 import { Role } from '../../types/models';
@@ -45,6 +46,7 @@ const menuItems = [
   { text: 'Teams', icon: <Group />, path: '/teams', roles: [Role.Admin, Role.Security] },
   { text: 'Users', icon: <Person />, path: '/users', roles: [Role.Admin] },
   { text: 'Schedule', icon: <Schedule />, path: '/schedule' },
+  { text: 'Settings', icon: <Settings />, path: '/settings', roles: [Role.Admin, Role.Security] },
 ];
 
 export function AppLayout() {

@@ -85,3 +85,8 @@ export const viewsApi = {
   update: (id, data) => apiClient.patch(`/views/${id}`, data),
   delete: (id) => apiClient.delete(`/views/${id}`),
 };
+
+export const settingsApi = {
+  getDueDateSettings: () => apiClient.get('/settings/due-dates'),
+  updateDueDateSettings: (data) => apiClient.patch('/settings/due-dates', data),
+};
